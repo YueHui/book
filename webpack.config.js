@@ -13,28 +13,18 @@ module.exports = {
         umdNamedDefine: true
     },
     devServer: {
-        contentBase: './dist'
+        contentBase: './',
     },
+    devtool: "module-eval-source-map",
     plugins: [
         new CleanWebpackPlugin(),
         new HtmlWebpackPlugin({
             title: 'picPlayer',
-            template: "src/index.html",
+            template: "./index.html",
             inject:false
         })
     ],
     module:{
-        rules:[
-            {
-                test: /\.m?js.?$/,
-                exclude: /(node_modules|bower_components)/,
-                use: {
-                    loader: 'babel-loader',
-                    options: {
-                        presets: ['@babel/preset-env']
-                    }
-                }
-            }
-        ]
+        
     }
 };
