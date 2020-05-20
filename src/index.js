@@ -84,6 +84,7 @@ class Book {
     showBook() {
         this.addPaper();
         this.addPaper();
+        this.getMask();
 
 
         this.app.stage.interactive = true;
@@ -131,9 +132,30 @@ class Book {
         // console.log(flipMethods)
         // flipMethods._fold.call(paper,{x:mousePoint.x,y:mousePoint.y,corner:'tr'});
         //首先算右下角
-        const alpha = Math.atan2(mousePoint.y,mousePoint.x);
-        const beta = Math.PI/2 - alpha;
-        paper.rotation = beta;
+        const originPos = {
+            x: this.middleTopPoint.x + paper.width/2,
+            y: this.middleTopPoint.y + paper.height/2
+        }
+        //鼠标距底边距离
+        const ml = this.middleTopPoint.y+paper.height - mousePoint.y;
+        //鼠标距夹角距离
+        const mb = this.middleTopPoint.x+paper.width - mousePoint.x;
+        const tan = ml / mb;
+        const alpha = Math.atan(tan)*2;
+        paper.rotation = alpha;
+
+        // const distance = Math.sqrt(Math.pow(paper.width/2,2)+Math.pow(paper.height/2,2))
+        paper.x = mousePoint.x;
+        paper.y = mousePoint.y;
+        paper.pivot = {x:0,y:paper.height};
+
+        
+        // this.maskA.rotation = Math.PI/2 - alpha;
+        paper.mask = this.maskA;
+        
+        
+        // paper.x = originPos.x ;
+        // paper.y = distance*Math.sin(alpha);
         
         // paper.x = mousePoint.x ;
         // paper.y = mousePoint.y ;
@@ -144,15 +166,29 @@ class Book {
         // const pos = new PIXI.Point(mousePoint.x+middle.x- distance * Math.cos(alpha), mousePoint.y-middle.y- distance * Math.sin(alpha));
         // paper.x = pos.x;
         // paper.y = pos.y;
-        // paper.x = mousePoint.x + paper.width / 2 * Math.cos(Math.PI - alpha);
-        // // paper.x = mousePoint.x +  (mousePoint.x-paper.x)* Math.cos(alpha);
-        // paper.y = mousePoint.y - paper.height / 2 * Math.sin(Math.PI / 2 - alpha);
-        console.log(alpha)
+        // paper.x = originPos.x + paper.width / 2 * Math.cos(Math.PI - alpha);
+        // // // paper.x = mousePoint.x +  (mousePoint.x-paper.x)* Math.cos(alpha);
+        // paper.y = originPos.y - paper.height / 2 * Math.sin(Math.PI / 2 - alpha);
+        // console.log(paper.width/2,distance*Math.cos(Math.atan(paper.height/paper.width)),distance*Math.cos(alpha));
         // paper.x = mousePoint.x + mousePoint.x * Math.sin(alpha)
         // paper.setPosition({
         //     x: mousePoint.x * Math.sin(alpha)
         // });
         // const distance =  Math.max(0, Math.sin(gamma) * Math.sqrt(Math.pow(middle.x, 2) + Math.pow(middle.y, 2)));
+    }
+    getMask(){
+        if(this.maskA) return this.maskA;
+        const mask = new PIXI.Graphics();
+        this.maskA = mask;
+        mask.beginFill(0x0000FF);
+        mask.drawRect(0,0,this.config.paperWidth, this.config.paperHeight);
+        mask.endFill();
+        mask.pivot = {x:this.config.paperWidth/2,y:this.config.paperHeight/2};
+        mask.x = this.middleTopPoint.x + this.config.paperWidth/2;
+        mask.y = this.config.padding + this.config.paperHeight/2;
+        this.app.stage.addChild(mask);
+        
+        return mask;
     }
 }
 
