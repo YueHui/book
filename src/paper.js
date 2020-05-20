@@ -14,10 +14,12 @@ class Paper extends PIXI.Container {
 		image.width = width;
 		image.cursor = 'pointer';
 		this.moved = false;
+		
 		// image.hitArea = new PIXI.Rectangle(0, 0, image.width, image.height);
 		// image.interactive = true;
 		// image.on("click",this.click);
 		this.addChild(image);
+		this.pivot = new PIXI.Point(image.width/2,image.height/2);
 	}
 	move() {
 		if(this.moved) return;
@@ -33,6 +35,11 @@ class Paper extends PIXI.Container {
 		})
 		ticker.start();
 	}
+	setPosition({x,y}){
+		this.x = x+this.pivot.x;
+		this.y = y+this.pivot.y;
+	}
+
 }
 
 export default Paper;
