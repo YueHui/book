@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import Paper from './paper';
-import flipMethods from './lib/flip';
+
 
 class Book {
     constructor(config) {
@@ -17,10 +17,11 @@ class Book {
             ..._config,
             ...config
         };
-        //下一个要显示的索引
+        //右面显示的页码
         this.showIndex = 0;
         //是否移动中
         this.moving = false;
+        this.movePage = null;
         this.app = null;
         this.width = this.config.width;
         this.height = this.config.height;
@@ -43,10 +44,31 @@ class Book {
         const app = new PIXI.Application({
             width: this.config.width,
             height: this.config.height,
-            sharedTicker: true
+            sharedTicker: true,
+            backgroundColor: 0x666666,
+            antialias: true,
         });
-        this.app = app;
         rootNode.appendChild(app.view);
+
+        const leftContain = new PIXI.Container();
+        leftContain.x = this.middleTopPoint.x - this.config.paperWidth;
+        leftContain.y = this.middleTopPoint.y;
+        app.stage.addChild(leftContain);
+
+        const rightContain = new PIXI.Container();
+        rightContain.x = this.middleTopPoint.x;
+        rightContain.y = this.middleTopPoint.y;
+        app.stage.addChild(rightContain);
+
+        const pageContain = new PIXI.Container();
+        leftContain.x = 0;
+        leftContain.y = 0;
+        app.stage.addChild(pageContain);
+
+        this.app = app;
+        this.leftContain = leftContain;
+        this.rightContain = rightContain;
+        this.pageContain = pageContain;
     }
     loadImages() {
         if (!this.config.images || this.config.images.length === 0) {
@@ -73,139 +95,129 @@ class Book {
             .add(this.config.images)
             .load(() => {
                 this.app.stage.removeChild(loadingLayer);
-                const bg = new PIXI.Graphics();
-                bg.beginFill(0x333333);
-                bg.drawRect(0, 0, this.width, this.height);
-                bg.endFill();
-                this.app.stage.addChild(bg);
                 this.showBook();
             });
     }
     showBook() {
-        this.addPaper();
-        this.addPaper();
-        this.getMask();
-
+        this.showRight(this.showIndex);
+        // this.showLeft(1)
+        // this.addPaper();
+        // const paper = this.addPaper();
 
         this.app.stage.interactive = true;
         this.app.stage.on("mousedown", () => {
             this.moving = true;
         });
-        this.app.stage.on("mouseup", () => {
+        this.app.stage.on("mouseup", (e) => {
             this.moving = false;
+            const paper = this.movePage;
+            if(e.data.global.x >= this.middleTopPoint.x){
+                paper.goPosition(paper.rbCorner);
+            }else{
+                paper.goPosition({
+                    x: this.middleTopPoint.x - paper.width,
+                    y: this.middleTopPoint.y + paper.height
+                },()=>{
+                  this.showLeft(this.showIndex+1);
+                  this.showIndex++;
+                })
+                console.log(this.leftContain.x)
+            }
+            
+
         });
         this.app.stage.on("mousemove", (e) => {
+            const {x,y} = e.data.global;
+            
             if (this.moving) {
-                this.drawPage(new PIXI.Point(e.data.global.x, e.data.global.y));
+                this.drawPage(this.movePage,new PIXI.Point(x, y));
+            }else if(!this.movePage){
+                const p1 = new Paper({
+                    texture: this.loader.resources[this.config.images[this.showIndex]].texture,
+                    height: this.config.paperHeight,
+                    width: this.config.paperWidth
+                });
+                const p2 = new Paper({
+                    texture: this.loader.resources[this.config.images[this.showIndex+1]].texture,
+                    height: this.config.paperHeight,
+                    width: this.config.paperWidth
+                });
+                p1.interactive = true;
+                p2.interactive = true;
+
+                p1.setPosition({
+                    x: this.middleTopPoint.x,
+                    y: this.middleTopPoint.y
+                })
+                p2.setPosition({
+                    x: this.middleTopPoint.x,
+                    y: this.middleTopPoint.y
+                })
+
+                this.movePage = p2;
+                this.showRight(this.showIndex+2)
+                this.pageContain.addChild(p1);
+                this.pageContain.addChild(p2);
+                this.drawPage(p2,{
+                    x: this.middleTopPoint.x+this.config.paperWidth-20,
+                    y: this.middleTopPoint.y+ this.config.paperHeight - 20,
+                })
+                console.log(p2.x,p2.y);
             }
         })
-        // this.app.stage.on("click", (e) => {
-        //     this.drawPage(new PIXI.Point(e.data.global.x,e.data.global.y));
-        // });
 
     }
-    addPaper(index) {
+    /**
+     * 显示动画的页面
+     * @param {*} paper 
+     */
+    drawPage(paper,mousePoint) {
+
+        paper.x = mousePoint.x;
+        paper.y = mousePoint.y;
+        paper.pivot = {
+            x: 0,
+            y: paper.image.height
+        };
+        paper.updatePosition(paper.rbCorner);
+
+
+    }
+    /**
+     * 显示右面的图片
+     */
+    showRight(index){
+        this.rightContain.removeChildren();
         const paper = new Paper({
             texture: this.loader.resources[this.config.images[index || this.showIndex]].texture,
             height: this.config.paperHeight,
             width: this.config.paperWidth
         });
 
-        // paper.x = this.middleTopPoint.x;
-        // paper.y = this.config.padding;
         paper.setPosition({
-            x: this.middleTopPoint.x,
-            y: this.config.padding
+            x: 0,
+            y: 0
+        });
+        this.rightContain.addChild(paper);
+    }
+    /**
+     * 显示左面的图片
+     */
+    showLeft(index){
+        this.leftContain.removeChildren();
+        const paper = new Paper({
+            texture: this.loader.resources[this.config.images[index || this.showIndex]].texture,
+            height: this.config.paperHeight,
+            width: this.config.paperWidth
         });
 
-        paper.cursor = 'pointer';
-        paper.interactive = true;
-        paper.rotation = 0;
-
-        this.app.stage.addChild(paper);
-        this.showIndex++;
-        return paper;
+        paper.setPosition({
+            x: 0,
+            y: 0
+        });
+        this.leftContain.addChild(paper);
     }
-    drawPage(mousePoint) {
-        const paper = this.app.stage.getChildAt(this.showIndex);
 
-        // console.log(flipMethods)
-        // flipMethods._fold.call(paper,{x:mousePoint.x,y:mousePoint.y,corner:'tr'});
-        //首先算右下角
-        const originPos = {
-            x: this.middleTopPoint.x + paper.width/2,
-            y: this.middleTopPoint.y + paper.height/2
-        }
-        //鼠标距底边距离
-        const ml = this.middleTopPoint.y+paper.height - mousePoint.y;
-        //鼠标距夹角距离
-        const mb = this.middleTopPoint.x+paper.width - mousePoint.x;
-        const tan = ml / mb;
-        const alpha = Math.atan(tan)*2;
-        paper.rotation = alpha;
-
-        // const distance = Math.sqrt(Math.pow(paper.width/2,2)+Math.pow(paper.height/2,2))
-        paper.x = mousePoint.x;
-        paper.y = mousePoint.y;
-        paper.pivot = {x:0,y:paper.height};
-
-        
-        // this.maskA.rotation = Math.PI/2 - alpha;
-        paper.mask = this.maskA;
-        
-        
-        // paper.x = originPos.x ;
-        // paper.y = distance*Math.sin(alpha);
-        
-        // paper.x = mousePoint.x ;
-        // paper.y = mousePoint.y ;
-
-        // const middle = {x:paper.width/2,y:paper.height/2};
-        // const distance = Math.sqrt(Math.pow(middle.x, 2) + Math.pow(middle.y, 2));
-
-        // const pos = new PIXI.Point(mousePoint.x+middle.x- distance * Math.cos(alpha), mousePoint.y-middle.y- distance * Math.sin(alpha));
-        // paper.x = pos.x;
-        // paper.y = pos.y;
-        // paper.x = originPos.x + paper.width / 2 * Math.cos(Math.PI - alpha);
-        // // // paper.x = mousePoint.x +  (mousePoint.x-paper.x)* Math.cos(alpha);
-        // paper.y = originPos.y - paper.height / 2 * Math.sin(Math.PI / 2 - alpha);
-        // console.log(paper.width/2,distance*Math.cos(Math.atan(paper.height/paper.width)),distance*Math.cos(alpha));
-        // paper.x = mousePoint.x + mousePoint.x * Math.sin(alpha)
-        // paper.setPosition({
-        //     x: mousePoint.x * Math.sin(alpha)
-        // });
-        // const distance =  Math.max(0, Math.sin(gamma) * Math.sqrt(Math.pow(middle.x, 2) + Math.pow(middle.y, 2)));
-    }
-    getMask(){
-        if(this.maskA) return this.maskA;
-        const mask = new PIXI.Graphics();
-        this.maskA = mask;
-        mask.beginFill(0x0000FF);
-        mask.drawRect(0,0,this.config.paperWidth, this.config.paperHeight);
-        mask.endFill();
-        mask.pivot = {x:this.config.paperWidth/2,y:this.config.paperHeight/2};
-        mask.x = this.middleTopPoint.x + this.config.paperWidth/2;
-        mask.y = this.config.padding + this.config.paperHeight/2;
-        this.app.stage.addChild(mask);
-        
-        return mask;
-    }
 }
 
 export default Book;
-
-/**
- * 弧度转角度
- * @param {*} radian 
- */
-function angle(radian) {
-    return 180 * radian / Math.PI;
-}
-
-/**
- * 角度转弧度
- * @param {*} angle 
- */
-function radian(angle) {
-    return angle / 180 * Math.PI;
-}
