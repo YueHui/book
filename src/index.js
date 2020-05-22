@@ -1,32 +1,36 @@
 import * as PIXI from 'pixi.js';
 import Paper from './paper';
+import Flip from './flip';
 
+const dragShadowImg = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGMAAAAyCAYAAABI6WXHAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAFLaVRYdFhNTDpjb20uYWRvYmUueG1wAAAAAAA8P3hwYWNrZXQgYmVnaW49Iu+7vyIgaWQ9Ilc1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCI/Pgo8eDp4bXBtZXRhIHhtbG5zOng9ImFkb2JlOm5zOm1ldGEvIiB4OnhtcHRrPSJBZG9iZSBYTVAgQ29yZSA1LjYtYzE0MiA3OS4xNjA5MjQsIDIwMTcvMDcvMTMtMDE6MDY6MzkgICAgICAgICI+CiA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogIDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiLz4KIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+Cjw/eHBhY2tldCBlbmQ9InIiPz6eHGDvAAABBUlEQVR4Xu3RywrCMBQG4dQ2vv/T9i54UnKkFNzPYj74TRWNixmO43i17fs+xq5z27ZxXdcpdp3Lsoyxdv42z3Nbzec4a579O9cZv6/9rhr3TnH/b/G/9TzPsZQyxertbHvfzufz87P8Ta7dk2v354bYP5++M3b07bGtb71t6Ztv5/M53z+Xd7Q78/7r/17xIghjgBgDxBggxgAxBogxQIwBYgwQY4AYA8QYIMYAMQaIMUCMAWIMEGOAGAPEGCDGADEGiDFAjAFiDBBjgBgDxBggxgAxBogxQIwBYgwQY4AYA8QYIMYAMQaIMUCMAWIMEGOAGAPEGCDGADEGiDFAjAFiDIxSvrXsgWjB4GEcAAAAAElFTkSuQmCC";
+
+let config = {
+    root: "book",
+    images: [],
+    width: window.innerWidth,
+    height: window.innerHeight,
+    padding: 100,
+    paperWidth: 500,
+    paperHeight: 600,
+},
+middleTopPoint = new PIXI.Point(0,0);
 
 class Book {
-    constructor(config) {
-        const _config = {
-            root: "book",
-            images: [],
-            width: window.innerWidth,
-            height: window.innerHeight,
-            padding: 100,
-            paperWidth: 500,
-            paperHeight: 600,
-        }
-        this.config = {
-            ..._config,
-            ...config
+    constructor(_config) {
+        config = {
+            ...config,
+            ..._config
         };
         //右面显示的页码
-        this.showIndex = 0;
+        this.currentIndex = 0;
         //是否移动中
         this.moving = false;
         this.movePage = null;
         this.app = null;
-        this.width = this.config.width;
-        this.height = this.config.height;
+        this.width = config.width;
+        this.height = config.height;
         this.loader = PIXI.Loader.shared;
-        this.middleTopPoint = new PIXI.Point(this.width / 2, this.config.padding);
+        middleTopPoint = new PIXI.Point(this.width / 2, config.padding);
 
 
 
@@ -34,7 +38,7 @@ class Book {
         this.loadImages();
     }
     init() {
-        let rootNode = this.config.root;
+        let rootNode = config.root;
         if (typeof rootNode == "string") {
             rootNode = document.querySelector(`#${rootNode}`);
         }
@@ -42,27 +46,27 @@ class Book {
             throw new Error("need to given a node or id");
         }
         const app = new PIXI.Application({
-            width: this.config.width,
-            height: this.config.height,
+            width: config.width,
+            height: config.height,
             sharedTicker: true,
             backgroundColor: 0x666666,
             antialias: true,
         });
         rootNode.appendChild(app.view);
 
-        const leftContain = new PIXI.Container();
-        leftContain.x = this.middleTopPoint.x - this.config.paperWidth;
-        leftContain.y = this.middleTopPoint.y;
-        app.stage.addChild(leftContain);
-
         const rightContain = new PIXI.Container();
-        rightContain.x = this.middleTopPoint.x;
-        rightContain.y = this.middleTopPoint.y;
+        rightContain.x = middleTopPoint.x;
+        rightContain.y = middleTopPoint.y;
         app.stage.addChild(rightContain);
 
-        const pageContain = new PIXI.Container();
-        leftContain.x = 0;
-        leftContain.y = 0;
+        const leftContain = new PIXI.Container();
+        leftContain.x = middleTopPoint.x - config.paperWidth;
+        leftContain.y = middleTopPoint.y;
+        app.stage.addChild(leftContain);
+
+        const pageContain = new Flip();
+        pageContain.x = 0;
+        pageContain.y = 0;
         app.stage.addChild(pageContain);
 
         this.app = app;
@@ -71,7 +75,7 @@ class Book {
         this.pageContain = pageContain;
     }
     loadImages() {
-        if (!this.config.images || this.config.images.length === 0) {
+        if (!config.images || config.images.length === 0) {
             throw new Error("no images found");
         }
 
@@ -92,17 +96,15 @@ class Book {
             text.text = `资源加载中... ${progress}%`;
         })
         this.loader
-            .add(this.config.images)
+            .add(config.images)
             .load(() => {
                 this.app.stage.removeChild(loadingLayer);
                 this.showBook();
             });
     }
     showBook() {
-        this.showRight(this.showIndex);
-        // this.showLeft(1)
-        // this.addPaper();
-        // const paper = this.addPaper();
+        this.showRight(this.currentIndex);
+
 
         this.app.stage.interactive = true;
         this.app.stage.on("mousedown", () => {
@@ -110,88 +112,57 @@ class Book {
         });
         this.app.stage.on("mouseup", (e) => {
             this.moving = false;
-            const paper = this.movePage;
-            if(e.data.global.x >= this.middleTopPoint.x){
-                paper.goPosition(paper.rbCorner);
-            }else{
-                paper.goPosition({
-                    x: this.middleTopPoint.x - paper.width,
-                    y: this.middleTopPoint.y + paper.height
-                },()=>{
-                  this.showLeft(this.showIndex+1);
-                  this.showIndex++;
-                })
-                console.log(this.leftContain.x)
-            }
             
+            if(e.data.global.x >= middleTopPoint.x){
+                this.pageContain.recover(()=>{
+                    this.showRight(this.currentIndex);
+                });
+            }else{
+                
+                this.pageContain.goNext(()=>{
+                    this.showLeft(this.currentIndex+1);
+                    //如果后面还有页面
+                    this.currentIndex += 2;
+                });
+            }
 
         });
         this.app.stage.on("mousemove", (e) => {
             const {x,y} = e.data.global;
             
             if (this.moving) {
-                this.drawPage(this.movePage,new PIXI.Point(x, y));
-            }else if(!this.movePage){
-                const p1 = new Paper({
-                    texture: this.loader.resources[this.config.images[this.showIndex]].texture,
-                    height: this.config.paperHeight,
-                    width: this.config.paperWidth
-                });
-                const p2 = new Paper({
-                    texture: this.loader.resources[this.config.images[this.showIndex+1]].texture,
-                    height: this.config.paperHeight,
-                    width: this.config.paperWidth
-                });
-                p1.interactive = true;
-                p2.interactive = true;
+                this.pageContain.update(new PIXI.Point(x, y));
+            }else if(this.pageContain.children.length === 0 ){
+               //等于0代表还未初始化
+            
+                let corner = 'rb';
+                if(x<middleTopPoint.x){
+                    corner = 'lb';
+                }
 
-                p1.setPosition({
-                    x: this.middleTopPoint.x,
-                    y: this.middleTopPoint.y
-                })
-                p2.setPosition({
-                    x: this.middleTopPoint.x,
-                    y: this.middleTopPoint.y
-                })
-
-                this.movePage = p2;
-                this.showRight(this.showIndex+2)
-                this.pageContain.addChild(p1);
-                this.pageContain.addChild(p2);
-                this.drawPage(p2,{
-                    x: this.middleTopPoint.x+this.config.paperWidth-20,
-                    y: this.middleTopPoint.y+ this.config.paperHeight - 20,
-                })
-                console.log(p2.x,p2.y);
+                if(corner.includes('r') && this.currentIndex<config.images.length-1){
+                    this.showRight(this.currentIndex+2)
+                    this.pageContain.init(this.currentIndex,this.currentIndex+1,corner);
+                }else if(corner.includes('l') && this.currentIndex > 0){
+                    // this.showRight(this.currentIndex+2)
+                    this.pageContain.init(this.currentIndex-1,this.currentIndex-2,corner);
+                }
+                
+                
             }
         })
 
     }
-    /**
-     * 显示动画的页面
-     * @param {*} paper 
-     */
-    drawPage(paper,mousePoint) {
-
-        paper.x = mousePoint.x;
-        paper.y = mousePoint.y;
-        paper.pivot = {
-            x: 0,
-            y: paper.image.height
-        };
-        paper.updatePosition(paper.rbCorner);
-
-
-    }
+    
     /**
      * 显示右面的图片
      */
     showRight(index){
         this.rightContain.removeChildren();
         const paper = new Paper({
-            texture: this.loader.resources[this.config.images[index || this.showIndex]].texture,
-            height: this.config.paperHeight,
-            width: this.config.paperWidth
+            texture: this.loader.resources[config.images[index || this.currentIndex]].texture,
+            height: config.paperHeight,
+            width: config.paperWidth
         });
 
         paper.setPosition({
@@ -199,6 +170,12 @@ class Book {
             y: 0
         });
         this.rightContain.addChild(paper);
+
+        const shadow = PIXI.Sprite.from(dragShadowImg);
+        shadow.height = config.paperHeight;
+        shadow.alpha = 0.2;
+        shadow.x = - 50;
+        this.rightContain.addChild(shadow);
     }
     /**
      * 显示左面的图片
@@ -206,9 +183,9 @@ class Book {
     showLeft(index){
         this.leftContain.removeChildren();
         const paper = new Paper({
-            texture: this.loader.resources[this.config.images[index || this.showIndex]].texture,
-            height: this.config.paperHeight,
-            width: this.config.paperWidth
+            texture: this.loader.resources[config.images[index || this.currentIndex]].texture,
+            height: config.paperHeight,
+            width: config.paperWidth
         });
 
         paper.setPosition({
@@ -216,8 +193,15 @@ class Book {
             y: 0
         });
         this.leftContain.addChild(paper);
+
+        
     }
 
 }
 
 export default Book;
+export {
+    config,
+    middleTopPoint,
+    dragShadowImg
+}
