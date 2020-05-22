@@ -1,9 +1,5 @@
 import * as PIXI from 'pixi.js';
-import {
-	gsap
-} from "gsap/all";
-
-// const ticker = new PIXI.Ticker();
+import {dragShadowImg} from './index';
 
 
 class Paper extends PIXI.Container {
@@ -32,13 +28,8 @@ class Paper extends PIXI.Container {
 		this.addChild(image);
 		this.pivot = new PIXI.Point(image.width / 2, image.height / 2);
 
-		// this.filters = [new DropShadowFilter({
-		// 	rotation:30,
-		// 	blur:5,
-		// 	quality:10,
-		// 	distance:10,
-		// 	alpha:.7
-		// })]
+		this.dragShadow = PIXI.Sprite.from(dragShadowImg);
+		this.hasDragMask = false;
 	}
 	setPosition({
 		x,
@@ -55,24 +46,18 @@ class Paper extends PIXI.Container {
 	}
 	
 	/**
-	 * 返回到指定的角
-	 * @param {x,y} corner 
-	 */
-	goPosition(corner,onComplete=()=>{}) {
-		gsap.to(this, 1, {
-			x: corner.x,
-			y: corner.y,
-			onUpdate: this.updatePosition.bind(this, this.rbCorner),
-			onComplete
-		});
-	}
-	/**
 	 * 更新当前的显示
 	 * 根据当前的坐标，以及拖拽的边角
 	 * 同时改变遮罩显示的宽度
 	 * @param {x,y} corner 角的坐标{x,y}
 	 */
 	updatePosition(corner) {
+		if(!this.hasDragMask){
+			this.addMask();
+			this.addShadow();
+			this.hasDragMask = true;
+		}
+
 		//鼠标距底边距离
 		const ml = corner.y - this.y;
 		//鼠标距右边距离
@@ -82,34 +67,53 @@ class Paper extends PIXI.Container {
 		const alpha = Math.atan(tan) * 2;
 		this.rotation = alpha;
 		this.showWidth = ml / Math.sin(alpha);
-		this.showMask();
+
+		this.dragShadow.x = this.showWidth;
+		this.dragShadow.rotation = -this.rotation/2 ;
+		
+		
 	}
-	showMask() {
+	/**
+	 * 添加阴影
+	 */
+	addShadow(){
+		const dragShadow = this.dragShadow;
+		// dragShadow.height = this.image.height;
+		// dragShadow.width = 99;
+		dragShadow.height = this.image.height+200;
+		
+		dragShadow.pivot = new PIXI.Point(dragShadow.width,50)
+		dragShadow.x = 0;
+		dragShadow.y = dragShadow.height-200;
+		
+		dragShadow.rotation = 0;
+		dragShadow.alpha = .2;
+
+		this.addChild(dragShadow);
+		this.dragShadow = dragShadow;
+
+	}
+	/**
+	 * 遮罩阴影用
+	 */
+	addMask() {
 		if (this.mask) {
 			this.removeChild(this.mask);
 			this.mask = null;
 		};
 		this.removeChild(this.maskA);
 		const mask = new PIXI.Graphics();
-		const height = this.image.height + 400;
+		const height = this.image.height;
 
 		mask.beginFill(0x0000FF);
 		mask.drawRect(0, 0, this.image.width, height);
 		mask.endFill();
 
-		mask.pivot = new PIXI.Point(this.image.width, height - 200);
-
-		mask.x = (this.showWidth || 0);
-		mask.y = this.image.height;
-
-		mask.rotation = -this.rotation / 2;
-		// mask.rotation +=1;
-
-
 		this.addChild(mask);
 		this.mask = mask;
 		this.maskA = mask;
 	}
+
 
 }
 
