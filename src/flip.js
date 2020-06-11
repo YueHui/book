@@ -12,6 +12,7 @@ class Flip extends PIXI.Container{
 		super();
 		this.loader = PIXI.Loader.shared;
 		this.movePaper = null;
+		this.corner = 'rb'; 	//拖拽角度
 	}
 	/**
 	 * @param {number} currentIndex 当前显示索引
@@ -69,10 +70,24 @@ class Flip extends PIXI.Container{
 	 */
 	update(point){
 		const paper = this.movePaper;
+		const corner = paper.rbCorner;
+
+		//鼠标距底边距离
+		const ml = corner.y - point.y;
+		//鼠标距右边距离
+		const mb = corner.x - point.x;
+
+		const tan = ml / mb;
+		const alpha = Math.atan(tan) * 2;
+
+		if(middleTopPoint.y + paper.image.height - point.y > paper.image.width*Math.sin(alpha)){
+			return;
+		}
+
 		paper.alpha = 1;
 		paper.x = point.x;
         paper.y = point.y;
-		paper.updatePosition(paper.rbCorner);
+		paper.updatePosition(paper.rbCorner,alpha);
 		this.addMask();
 	}
 	clear(){

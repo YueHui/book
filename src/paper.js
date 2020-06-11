@@ -24,6 +24,10 @@ class Paper extends PIXI.Container {
 			x: image.width,
 			y: image.height,
 		}
+		this.lbCorner = {
+			x: 0,
+			y: image.height,
+		}
 		// this.showMask();
 		this.addChild(image);
 		this.pivot = new PIXI.Point(image.width / 2, image.height / 2);
@@ -50,8 +54,9 @@ class Paper extends PIXI.Container {
 	 * 根据当前的坐标，以及拖拽的边角
 	 * 同时改变遮罩显示的宽度
 	 * @param {x,y} corner 角的坐标{x,y}
+	 * @param alpha 选择的角度
 	 */
-	updatePosition(corner) {
+	updatePosition(corner,alpha) {
 		if(!this.hasDragMask){
 			this.addMask();
 			this.addShadow();
@@ -63,8 +68,11 @@ class Paper extends PIXI.Container {
 		//鼠标距右边距离
 		const mb = corner.x - this.x;
 
-		const tan = ml / mb;
-		const alpha = Math.atan(tan) * 2;
+		//动画没有预算角度
+		if(!alpha){
+			const tan = ml / mb;
+			alpha = Math.atan(tan) * 2;
+		}
 		this.rotation = alpha;
 		this.showWidth = ml / Math.sin(alpha);
 
