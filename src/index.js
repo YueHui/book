@@ -139,6 +139,7 @@ class Book {
                 if(x<middleTopPoint.x){
                     corner = 'lb';
                 }
+                this.pageContain.corner = corner;
 
                 if(corner.includes('r') && this.currentIndex<config.images.length-1){
                     this.showRight(this.currentIndex+2)
