@@ -70,7 +70,15 @@ class Flip extends PIXI.Container{
 	 */
 	update(point){
 		const paper = this.movePaper;
-		const corner = paper.rbCorner;
+		let corner;
+		switch(this.corner){
+			case 'rb':
+				corner = paper.rbCorner;
+				break;
+			case 'lb':
+				corner = paper.lbCorner;
+				break;
+		}
 
 		//鼠标距底边距离
 		const ml = corner.y - point.y;
