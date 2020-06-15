@@ -33,6 +33,7 @@ class Paper extends PIXI.Container {
 		this.pivot = new PIXI.Point(image.width / 2, image.height / 2);
 
 		this.dragShadow = PIXI.Sprite.from(dragShadowImg);
+		this.corner = 'rb';
 		this.hasDragMask = false;
 	}
 	setPosition({
@@ -46,6 +47,11 @@ class Paper extends PIXI.Container {
 		this.rbCorner = {
 			x: this.rbCorner.x + x,
 			y: this.rbCorner.y + y,
+		}
+		
+		this.lbCorner = {
+			x: this.lbCorner.x + x,
+			y: this.lbCorner.y + y,
 		}
 	}
 	
@@ -74,9 +80,16 @@ class Paper extends PIXI.Container {
 			alpha = Math.atan(tan) * 2;
 		}
 		this.rotation = alpha;
-		this.showWidth = ml / Math.sin(alpha);
+		this.showWidth = Math.abs(ml / Math.sin(alpha));
 
-		this.dragShadow.x = this.showWidth;
+		console.log(this.corner)
+		if(this.corner.includes('l')){
+			this.dragShadow.x = this.image.width - this.showWidth + this.dragShadow.width;
+			this.dragShadow.y = this.dragShadow.height-100
+		}else{
+			this.dragShadow.x = this.showWidth;	
+		}
+		
 		this.dragShadow.rotation = -this.rotation/2 ;
 		
 		
@@ -90,7 +103,8 @@ class Paper extends PIXI.Container {
 		// dragShadow.width = 99;
 		dragShadow.height = this.image.height+200;
 		
-		dragShadow.pivot = new PIXI.Point(dragShadow.width,50)
+		dragShadow.pivot = new PIXI.Point(dragShadow.width,50);
+
 		dragShadow.x = 0;
 		dragShadow.y = dragShadow.height-200;
 		

@@ -13,16 +13,17 @@ class Flip extends PIXI.Container{
 		this.loader = PIXI.Loader.shared;
 		this.movePaper = null;
 		this.corner = 'rb'; 	//拖拽角度
+		this.paperCorner = null;//拖拽角的坐标
 	}
 	/**
 	 * @param {number} currentIndex 当前显示索引
 	 * @param {number} nextIndex 下一页的索引
-	 * @param {string} corner 指定角 rb,lb,lt,rt
 	 */
-	init(currentIndex,nextIndex,corner){
+	init(currentIndex,nextIndex){
 		if(this.children.length>0){
 			return;
 		}
+		const corner = this.corner;
 		const p1 = new Paper({
 			texture: this.loader.resources[config.images[currentIndex]].texture,
 			height: config.paperHeight,
@@ -45,6 +46,9 @@ class Flip extends PIXI.Container{
 				x: middleTopPoint.x - config.paperWidth,
 				y: middleTopPoint.y
 			});
+			//注册点 右下角
+			p2.pivot = new PIXI.Point(config.paperWidth,config.paperHeight);
+			this.paperCorner = p2.lbCorner;
 		}else{
 			p1.setPosition({
 				x: middleTopPoint.x,
@@ -54,9 +58,12 @@ class Flip extends PIXI.Container{
 				x: middleTopPoint.x,
 				y: middleTopPoint.y
 			});
+			//注册点 左下角
+			p2.pivot = new PIXI.Point(0,config.paperHeight);
+			this.paperCorner = p2.rbCorner;
 		}
 		
-		p2.pivot = new PIXI.Point(0,config.paperHeight);
+		p2.corner = this.corner;
 		p2.alpha = 0;
 
 
@@ -70,32 +77,33 @@ class Flip extends PIXI.Container{
 	 */
 	update(point){
 		const paper = this.movePaper;
-		let corner;
-		switch(this.corner){
-			case 'rb':
-				corner = paper.rbCorner;
-				break;
-			case 'lb':
-				corner = paper.lbCorner;
-				break;
-		}
+		let corner = this.paperCorner;
 
 		//鼠标距底边距离
 		const ml = corner.y - point.y;
 		//鼠标距右边距离
-		const mb = corner.x - point.x;
+		// 右边的距离总是从右边-鼠标x
+		const mb = Math.abs(corner.x - point.x);
 
 		const tan = ml / mb;
-		const alpha = Math.atan(tan) * 2;
-
-		if(middleTopPoint.y + paper.image.height - point.y > paper.image.width*Math.sin(alpha)){
-			return;
+		let alpha;
+		if(this.corner.includes("l")){
+			alpha = -Math.atan(tan)*2;
+		}else{
+			alpha = Math.atan(tan) * 2;
 		}
+		// const alpha = Math.atan(tan) * (this.corner.includes("l")?1:2)-(this.corner.includes("l")?Math.PI/2:0);
+		// const alpha = Math.atan(tan) * (this.corner.includes("l")?1:2);
+
+		// if(middleTopPoint.y + paper.image.height - point.y > paper.image.width*Math.sin(alpha)){
+		// 	return;
+		// }
+		// console.log(alpha)
 
 		paper.alpha = 1;
 		paper.x = point.x;
         paper.y = point.y;
-		paper.updatePosition(paper.rbCorner,alpha);
+		paper.updatePosition(corner,alpha);
 		this.addMask();
 	}
 	clear(){
@@ -107,7 +115,7 @@ class Flip extends PIXI.Container{
 	 */
 	recover(onComplete){
 		const paper = this.movePaper;
-		const corner = paper.rbCorner;
+		const corner = this.paperCorner;
 		
 		gsap.to(paper, 1, {
 			x: corner.x,
@@ -130,10 +138,10 @@ class Flip extends PIXI.Container{
 	 */
 	goNext(onComplete){
 		const paper = this.movePaper;
-		const corner = paper.rbCorner;
-		
+		const corner = this.paperCorner;
+		console.log(this.corner);
 		gsap.to(paper, 1, {
-			x: middleTopPoint.x - config.paperWidth,
+			x: middleTopPoint.x + config.paperWidth *(this.corner.includes("l")?1:-1),
 			y: middleTopPoint.y + config.paperHeight,
 			onUpdate: ()=>{
 				paper.updatePosition(corner);
@@ -161,10 +169,15 @@ class Flip extends PIXI.Container{
 		mask.drawRect(0, 0, width, height);
 		mask.endFill();
 
-		mask.pivot = new PIXI.Point(width, height - 400);
-
-		mask.x = paper.rbCorner.x - (paper.showWidth || 0);
-		mask.y = paper.rbCorner.y;
+		if(this.corner.includes("l")){
+			mask.pivot = new PIXI.Point(0, height - 400);
+			mask.x = this.paperCorner.x + (paper.showWidth || 0);
+			mask.y = this.paperCorner.y;
+		}else{
+			mask.pivot = new PIXI.Point(width, height - 400);
+			mask.x = this.paperCorner.x - (paper.showWidth || 0);
+			mask.y = this.paperCorner.y;
+		}
 		mask.rotation = paper.rotation / 2;
 
 		this.addChild(mask);
