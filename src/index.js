@@ -113,18 +113,41 @@ class Book {
         this.app.stage.on("mouseup", (e) => {
             this.moving = false;
             
-            if(e.data.global.x >= middleTopPoint.x){
-                this.pageContain.recover(()=>{
-                    this.showRight(this.currentIndex);
-                });
+            if(this.pageContain.corner.includes("l")){
+                if(e.data.global.x < middleTopPoint.x){
+                    this.pageContain.recover(()=>{
+                        this.showRight(this.currentIndex);
+                        this.showLeft(this.currentIndex-1);
+                        this.pageContain.removeChildren();
+                    });
+                }else{
+                    
+                    this.pageContain.goNext(()=>{
+                        this.currentIndex -= 2;
+                        this.showLeft(this.currentIndex-1);
+                        this.showRight(this.currentIndex);
+                        //如果后面还有页面
+                        
+                        this.pageContain.removeChildren();
+                    });
+                }
             }else{
-                
-                this.pageContain.goNext(()=>{
-                    this.showLeft(this.currentIndex+1);
-                    //如果后面还有页面
-                    this.currentIndex += 2;
-                });
+                if(e.data.global.x >= middleTopPoint.x){
+                    this.pageContain.recover(()=>{
+                        this.showRight(this.currentIndex);
+                        this.pageContain.removeChildren();
+                    });
+                }else{
+                    
+                    this.pageContain.goNext(()=>{
+                        this.showLeft(this.currentIndex+1);
+                        //如果后面还有页面
+                        this.currentIndex += 2;
+                        this.pageContain.removeChildren();
+                    });
+                }
             }
+            
 
         });
         this.app.stage.on("mousemove", (e) => {
@@ -143,10 +166,11 @@ class Book {
 
                 if(corner.includes('r') && this.currentIndex<config.images.length-1){
                     this.showRight(this.currentIndex+2)
-                    this.pageContain.init(this.currentIndex,this.currentIndex+1,corner);
+                    this.pageContain.init(this.currentIndex,this.currentIndex+1);
                 }else if(corner.includes('l') && this.currentIndex > 0){
-                    // this.showRight(this.currentIndex+2)
-                    this.pageContain.init(this.currentIndex-1,this.currentIndex-2,corner);
+                    //因为显示的左边是当前页面的前一页，所以在-2的基础上再减一
+                    this.showLeft(this.currentIndex-3);
+                    this.pageContain.init(this.currentIndex-1,this.currentIndex-2);
                 }
                 
                 
@@ -183,6 +207,7 @@ class Book {
      */
     showLeft(index){
         this.leftContain.removeChildren();
+        if(index<0) return;
         const paper = new Paper({
             texture: this.loader.resources[config.images[index || this.currentIndex]].texture,
             height: config.paperHeight,
