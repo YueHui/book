@@ -150,6 +150,19 @@ class Book {
         });
         this.app.stage.on("mouseup", (e) => {
             this.moving = false;
+            //点击期间没有拖拽，则认为是单机
+            if(!this.dragMove){
+                if(global.currentCorner.includes("l")){
+                    if(this.currentIndex <= 0 ) return;
+                    this.turnRight();
+                }else{
+                    if(this.currentIndex>= config.images.length-1) return;
+                    this.turnLeft();
+                }
+                return;
+            }
+            this.dragMove = false;
+            
             
             if(global.currentCorner.includes("l")){
                 if(this.currentIndex <= 0 ) return;
@@ -161,14 +174,7 @@ class Book {
                         this.pageContain.removeChildren();
                     });
                 }else{
-                    
-                    this.pageContain.goNext(()=>{
-                        global.tween = null;
-                        this.currentIndex -= 2;
-                        this.showLeft(this.currentIndex-1);
-                        this.showRight(this.currentIndex);
-                        this.pageContain.removeChildren();
-                    });
+                    this.turnRight();
                 }
             }else{
                 if(this.currentIndex>= config.images.length-1) return;
@@ -179,14 +185,7 @@ class Book {
                         this.pageContain.removeChildren();
                     });
                 }else{
-                    
-                    this.pageContain.goNext(()=>{
-                        global.tween = null;
-                        this.showLeft(this.currentIndex+1);
-                        //如果后面还有页面
-                        this.currentIndex += 2;
-                        this.pageContain.removeChildren();
-                    });
+                    this.turnLeft();
                 }
             }
         });
@@ -194,12 +193,36 @@ class Book {
         this.app.stage.on("mousemove", (e) => {
             const {x,y} = e.data.global;
             if (this.moving) {
+                this.dragMove = true;
                 this.pageContain.update(new PIXI.Point(x, y));
             }
         })
 
     }
-    
+    /**
+     * 点击右面,向左翻页
+     */
+    turnLeft(){
+        this.pageContain.goNext(()=>{
+            global.tween = null;
+            this.showLeft(this.currentIndex+1);
+            //如果后面还有页面
+            this.currentIndex += 2;
+            this.pageContain.removeChildren();
+        });
+    }
+    /**
+     * 点击左边，向右翻页
+     */
+    turnRight(){
+        this.pageContain.goNext(()=>{
+            global.tween = null;
+            this.currentIndex -= 2;
+            this.showLeft(this.currentIndex-1);
+            this.showRight(this.currentIndex);
+            this.pageContain.removeChildren();
+        });
+    }
     /**
      * 显示右面的图片
      */
