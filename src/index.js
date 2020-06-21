@@ -14,8 +14,20 @@ let config = {
     paperWidth: 500,
     paperHeight: 600,
 },
-middleTopPoint = new PIXI.Point(0,0),
-loader = null;
+global = {
+    middleTopPoint : new PIXI.Point(0,0),
+    loader : null,
+    //翻页动画
+    tween: null,
+    //会在纸张初始化时更新
+    rb: new PIXI.Point(config.paperWidth,config.paperHeight),
+    lb: new PIXI.Point(0,config.paperHeight),
+    currentCorner: 'rb'
+}
+
+window.global = global
+
+
 
 class Book {
     constructor(_config) {
@@ -31,17 +43,15 @@ class Book {
         this.app = null;
         this.width = config.width;
         this.height = config.height;
-        middleTopPoint = new PIXI.Point(this.width / 2, config.padding);
-
-
-
+        global.middleTopPoint = new PIXI.Point(this.width / 2, config.padding);
+        
         this.init();
         this.loadImages();
     }
     destroy(){
         this.app && this.app.destroy(true);
         //loader.reset();
-        loader = null;
+        global.loader = null;
     }
     init() {
         let rootNode = config.root;
@@ -59,16 +69,16 @@ class Book {
             antialias: true,
         });
         rootNode.appendChild(app.view);
-        loader = new PIXI.Loader();
+        global.loader = new PIXI.Loader();
 
         const rightContain = new PIXI.Container();
-        rightContain.x = middleTopPoint.x;
-        rightContain.y = middleTopPoint.y;
+        rightContain.x = global.middleTopPoint.x;
+        rightContain.y = global.middleTopPoint.y;
         app.stage.addChild(rightContain);
 
         const leftContain = new PIXI.Container();
-        leftContain.x = middleTopPoint.x - config.paperWidth;
-        leftContain.y = middleTopPoint.y;
+        leftContain.x = global.middleTopPoint.x - config.paperWidth;
+        leftContain.y = global.middleTopPoint.y;
         app.stage.addChild(leftContain);
 
         const pageContain = new Flip();
@@ -97,15 +107,15 @@ class Book {
         this.app.stage.addChild(loadingLayer);
 
 
-        loader.onProgress.add(({
+        global.loader.onProgress.add(({
             progress
         }) => {
             text.text = `资源加载中... ${progress}%`;
         })
         config.images.forEach((img,index)=>{
-            loader.add(`img${index}`,img);
+            global.loader.add(`img${index}`,img);
         })
-        loader
+        global.loader
             .load(() => {
                 this.app.stage.removeChild(loadingLayer);
                 this.showBook();
@@ -117,21 +127,21 @@ class Book {
 
         this.app.stage.interactive = true;
         this.app.stage.on("mousedown", (e) => {
-            
+            global.tween && global.tween.progress(1);
             this.moving = true;
-            const {x,y} = e.data.global;
-            let corner = 'rb';
+            console.log(this.currentIndex)
 
-            if(x<middleTopPoint.x){
-                corner = 'lb';
+            const {x,y} = e.data.global;
+            global.currentCorner = 'rb';
+            if(x < global.middleTopPoint.x){
+                global.currentCorner = 'lb';
             }
             this.pageContain.removeChildren();
-            this.pageContain.corner = corner;
             
-            if(corner.includes('r') && this.currentIndex<config.images.length-1){
+            if(global.currentCorner.includes('r') && this.currentIndex<config.images.length-1){
                 this.showRight(this.currentIndex+2)
                 this.pageContain.init(this.currentIndex,this.currentIndex+1);
-            }else if(corner.includes('l') && this.currentIndex > 0){
+            }else if(global.currentCorner.includes('l') && this.currentIndex > 0){
                 //因为显示的左边是当前页面的前一页，所以在-2的基础上再减一
                 this.showLeft(this.currentIndex-3);
                 this.pageContain.init(this.currentIndex-1,this.currentIndex-2);
@@ -141,10 +151,11 @@ class Book {
         this.app.stage.on("mouseup", (e) => {
             this.moving = false;
             
-            if(this.pageContain.corner.includes("l")){
+            if(global.currentCorner.includes("l")){
                 if(this.currentIndex <= 0 ) return;
-                if(e.data.global.x < middleTopPoint.x){
+                if(e.data.global.x < global.middleTopPoint.x){
                     this.pageContain.recover(()=>{
+                        global.tween = null;
                         this.showRight(this.currentIndex);
                         this.showLeft(this.currentIndex-1);
                         this.pageContain.removeChildren();
@@ -152,24 +163,25 @@ class Book {
                 }else{
                     
                     this.pageContain.goNext(()=>{
+                        global.tween = null;
                         this.currentIndex -= 2;
                         this.showLeft(this.currentIndex-1);
                         this.showRight(this.currentIndex);
-                        //如果后面还有页面
-                        
                         this.pageContain.removeChildren();
                     });
                 }
             }else{
                 if(this.currentIndex>= config.images.length-1) return;
-                if(e.data.global.x >= middleTopPoint.x){
+                if(e.data.global.x >= global.middleTopPoint.x){
                     this.pageContain.recover(()=>{
+                        global.tween = null;
                         this.showRight(this.currentIndex);
                         this.pageContain.removeChildren();
                     });
                 }else{
                     
                     this.pageContain.goNext(()=>{
+                        global.tween = null;
                         this.showLeft(this.currentIndex+1);
                         //如果后面还有页面
                         this.currentIndex += 2;
@@ -195,7 +207,7 @@ class Book {
         this.rightContain.removeChildren();
         if(index > config.images.length-1 || this.currentIndex >config.images.length-1) return;
         const paper = new Paper({
-            texture: loader.resources[`img${[index || this.currentIndex]}`].texture,
+            texture: global.loader.resources[`img${[index || this.currentIndex]}`].texture,
             height: config.paperHeight,
             width: config.paperWidth
         });
@@ -219,7 +231,7 @@ class Book {
         this.leftContain.removeChildren();
         if(index<0) return;
         const paper = new Paper({
-            texture: loader.resources[`img${[index || this.currentIndex]}`].texture,
+            texture: global.loader.resources[`img${[index || this.currentIndex]}`].texture,
             height: config.paperHeight,
             width: config.paperWidth
         });
@@ -238,7 +250,6 @@ class Book {
 export default Book;
 export {
     config,
-    middleTopPoint,
-    dragShadowImg,
-    loader
+    global,
+    dragShadowImg
 }

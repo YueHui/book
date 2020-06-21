@@ -1,6 +1,6 @@
 
 import * as PIXI from 'pixi.js';
-import {dragShadowImg} from './index';
+import {dragShadowImg,global, config} from './index';
 
 class Paper extends PIXI.Container {
 	constructor({
@@ -20,14 +20,7 @@ class Paper extends PIXI.Container {
 		this.moved = false;
 		this.image = image;
 		this.showWidth = 0;
-		this.rbCorner = {
-			x: image.width,
-			y: image.height,
-		}
-		this.lbCorner = {
-			x: 0,
-			y: image.height,
-		}
+		
 		// this.showMask();
 		this.addChild(image);
 		this.pivot = new PIXI.Point(image.width / 2, image.height / 2);
@@ -44,14 +37,14 @@ class Paper extends PIXI.Container {
 		this.y = y + this.pivot.y;
 
 		//更新角坐标
-		this.rbCorner = {
-			x: this.rbCorner.x + x,
-			y: this.rbCorner.y + y,
+		global.rb = {
+			x: config.paperWidth + x,
+			y: config.paperHeight + y,
 		}
 		
-		this.lbCorner = {
-			x: this.lbCorner.x + x,
-			y: this.lbCorner.y + y,
+		global.lb = {
+			x: 0 + x,
+			y: config.paperHeight + y,
 		}
 	}
 	
@@ -84,7 +77,7 @@ class Paper extends PIXI.Container {
 		this.showWidth = Math.abs(ml / Math.sin(alpha));
 
 		// console.log(this.corner)
-		if(this.corner.includes('l')){
+		if(global.currentCorner.includes('l')){
 			this.dragShadow.x = this.image.width - this.showWidth + this.dragShadow.width;
 			this.dragShadow.y = this.dragShadow.height-100
 		}else{
