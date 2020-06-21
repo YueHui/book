@@ -1,6 +1,6 @@
+
 import * as PIXI from 'pixi.js';
 import {dragShadowImg} from './index';
-
 
 class Paper extends PIXI.Container {
 	constructor({
@@ -79,10 +79,11 @@ class Paper extends PIXI.Container {
 			const tan = ml / mb;
 			alpha = Math.atan(tan) * 2;
 		}
+		
 		this.rotation = alpha;
 		this.showWidth = Math.abs(ml / Math.sin(alpha));
 
-		console.log(this.corner)
+		// console.log(this.corner)
 		if(this.corner.includes('l')){
 			this.dragShadow.x = this.image.width - this.showWidth + this.dragShadow.width;
 			this.dragShadow.y = this.dragShadow.height-100

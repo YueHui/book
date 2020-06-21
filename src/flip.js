@@ -1,16 +1,16 @@
+
 import * as PIXI from 'pixi.js';
 import {
 	gsap
 } from "gsap/all";
 import Paper from './paper';
-import {config,middleTopPoint} from './index';
+import {config,middleTopPoint,loader} from './index';
 
-
+const ANIMATE_TIME = 1;
 
 class Flip extends PIXI.Container{
 	constructor(){
 		super();
-		this.loader = PIXI.Loader.shared;
 		this.movePaper = null;
 		this.corner = 'rb'; 	//拖拽角度
 		this.paperCorner = null;//拖拽角的坐标
@@ -23,14 +23,17 @@ class Flip extends PIXI.Container{
 		if(this.children.length>0){
 			return;
 		}
+		if(this.movePaper){
+			gsap.killTweensOf(this.movePaper);
+		}
 		const corner = this.corner;
 		const p1 = new Paper({
-			texture: this.loader.resources[config.images[currentIndex]].texture,
+			texture: loader.resources[`img${[currentIndex]}`].texture,
 			height: config.paperHeight,
 			width: config.paperWidth
 		});
 		const p2 = new Paper({
-			texture: this.loader.resources[config.images[nextIndex]].texture,
+			texture: loader.resources[`img${[nextIndex]}`].texture,
 			height: config.paperHeight,
 			width: config.paperWidth
 		});
@@ -76,6 +79,7 @@ class Flip extends PIXI.Container{
 	 * @param {x,y} point 
 	 */
 	update(point){
+		
 		const paper = this.movePaper;
 		let corner = this.paperCorner;
 
@@ -99,7 +103,8 @@ class Flip extends PIXI.Container{
 		// 	return;
 		// }
 		// console.log(alpha)
-
+		const showWidth = Math.abs(ml / Math.sin(alpha));
+		if(showWidth > config.paperWidth) return;
 		paper.alpha = 1;
 		paper.x = point.x;
         paper.y = point.y;
@@ -117,7 +122,7 @@ class Flip extends PIXI.Container{
 		const paper = this.movePaper;
 		const corner = this.paperCorner;
 		
-		gsap.to(paper, 1, {
+		gsap.to(paper, ANIMATE_TIME, {
 			x: corner.x,
 			y: corner.y,
 			onUpdate: ()=>{
@@ -140,7 +145,7 @@ class Flip extends PIXI.Container{
 		const paper = this.movePaper;
 		const corner = this.paperCorner;
 		console.log(this.corner);
-		gsap.to(paper, 1, {
+		gsap.to(paper, ANIMATE_TIME, {
 			x: middleTopPoint.x + config.paperWidth *(this.corner.includes("l")?1:-1),
 			y: middleTopPoint.y + config.paperHeight,
 			onUpdate: ()=>{

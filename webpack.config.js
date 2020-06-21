@@ -15,7 +15,7 @@ module.exports = {
     devServer: {
         contentBase: './',
     },
-    devtool: "module-eval-source-map",
+    devtool: "source-map",
     plugins: [
         new CleanWebpackPlugin(),
         new HtmlWebpackPlugin({
