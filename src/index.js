@@ -1,3 +1,4 @@
+
 import * as PIXI from 'pixi.js';
 import Paper from './paper';
 import Flip from './flip';
@@ -13,7 +14,8 @@ let config = {
     paperWidth: 500,
     paperHeight: 600,
 },
-middleTopPoint = new PIXI.Point(0,0);
+middleTopPoint = new PIXI.Point(0,0),
+loader = null;
 
 class Book {
     constructor(_config) {
@@ -29,13 +31,17 @@ class Book {
         this.app = null;
         this.width = config.width;
         this.height = config.height;
-        this.loader = PIXI.Loader.shared;
         middleTopPoint = new PIXI.Point(this.width / 2, config.padding);
 
 
 
         this.init();
         this.loadImages();
+    }
+    destroy(){
+        this.app && this.app.destroy(true);
+        //loader.reset();
+        loader = null;
     }
     init() {
         let rootNode = config.root;
@@ -53,6 +59,7 @@ class Book {
             antialias: true,
         });
         rootNode.appendChild(app.view);
+        loader = new PIXI.Loader();
 
         const rightContain = new PIXI.Container();
         rightContain.x = middleTopPoint.x;
@@ -90,13 +97,15 @@ class Book {
         this.app.stage.addChild(loadingLayer);
 
 
-        this.loader.onProgress.add(({
+        loader.onProgress.add(({
             progress
         }) => {
             text.text = `资源加载中... ${progress}%`;
         })
-        this.loader
-            .add(config.images)
+        config.images.forEach((img,index)=>{
+            loader.add(`img${index}`,img);
+        })
+        loader
             .load(() => {
                 this.app.stage.removeChild(loadingLayer);
                 this.showBook();
@@ -107,13 +116,33 @@ class Book {
 
 
         this.app.stage.interactive = true;
-        this.app.stage.on("mousedown", () => {
+        this.app.stage.on("mousedown", (e) => {
+            
             this.moving = true;
+            const {x,y} = e.data.global;
+            let corner = 'rb';
+
+            if(x<middleTopPoint.x){
+                corner = 'lb';
+            }
+            this.pageContain.removeChildren();
+            this.pageContain.corner = corner;
+            
+            if(corner.includes('r') && this.currentIndex<config.images.length-1){
+                this.showRight(this.currentIndex+2)
+                this.pageContain.init(this.currentIndex,this.currentIndex+1);
+            }else if(corner.includes('l') && this.currentIndex > 0){
+                //因为显示的左边是当前页面的前一页，所以在-2的基础上再减一
+                this.showLeft(this.currentIndex-3);
+                this.pageContain.init(this.currentIndex-1,this.currentIndex-2);
+            }
+            this.pageContain.update(new PIXI.Point(x, y));
         });
         this.app.stage.on("mouseup", (e) => {
             this.moving = false;
             
             if(this.pageContain.corner.includes("l")){
+                if(this.currentIndex <= 0 ) return;
                 if(e.data.global.x < middleTopPoint.x){
                     this.pageContain.recover(()=>{
                         this.showRight(this.currentIndex);
@@ -132,6 +161,7 @@ class Book {
                     });
                 }
             }else{
+                if(this.currentIndex>= config.images.length-1) return;
                 if(e.data.global.x >= middleTopPoint.x){
                     this.pageContain.recover(()=>{
                         this.showRight(this.currentIndex);
@@ -147,33 +177,12 @@ class Book {
                     });
                 }
             }
-            
-
         });
+
         this.app.stage.on("mousemove", (e) => {
             const {x,y} = e.data.global;
-            
             if (this.moving) {
                 this.pageContain.update(new PIXI.Point(x, y));
-            }else if(this.pageContain.children.length === 0 ){
-               //等于0代表还未初始化
-            
-                let corner = 'rb';
-                if(x<middleTopPoint.x){
-                    corner = 'lb';
-                }
-                this.pageContain.corner = corner;
-
-                if(corner.includes('r') && this.currentIndex<config.images.length-1){
-                    this.showRight(this.currentIndex+2)
-                    this.pageContain.init(this.currentIndex,this.currentIndex+1);
-                }else if(corner.includes('l') && this.currentIndex > 0){
-                    //因为显示的左边是当前页面的前一页，所以在-2的基础上再减一
-                    this.showLeft(this.currentIndex-3);
-                    this.pageContain.init(this.currentIndex-1,this.currentIndex-2);
-                }
-                
-                
             }
         })
 
@@ -184,8 +193,9 @@ class Book {
      */
     showRight(index){
         this.rightContain.removeChildren();
+        if(index > config.images.length-1 || this.currentIndex >config.images.length-1) return;
         const paper = new Paper({
-            texture: this.loader.resources[config.images[index || this.currentIndex]].texture,
+            texture: loader.resources[`img${[index || this.currentIndex]}`].texture,
             height: config.paperHeight,
             width: config.paperWidth
         });
@@ -209,7 +219,7 @@ class Book {
         this.leftContain.removeChildren();
         if(index<0) return;
         const paper = new Paper({
-            texture: this.loader.resources[config.images[index || this.currentIndex]].texture,
+            texture: loader.resources[`img${[index || this.currentIndex]}`].texture,
             height: config.paperHeight,
             width: config.paperWidth
         });
@@ -229,5 +239,6 @@ export default Book;
 export {
     config,
     middleTopPoint,
-    dragShadowImg
+    dragShadowImg,
+    loader
 }
