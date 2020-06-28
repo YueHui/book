@@ -13,10 +13,12 @@ let config = {
     padding: 100,
     paperWidth: 500,
     paperHeight: 600,
+    preload: 5
 },
 global = {
     middleTopPoint : new PIXI.Point(0,0),
     loader : null,
+    loading:false,
     //翻页动画
     tween: null,
     //会在纸张初始化时更新
@@ -111,15 +113,37 @@ class Book {
             progress
         }) => {
             text.text = `资源加载中... ${progress}%`;
-        })
-        config.images.forEach((img,index)=>{
-            global.loader.add(`img${index}`,img);
-        })
+        });
+        for(let i=0;i<config.preload;i++){
+            global.loader.add(`img${i}`,config.images[i]);
+        }
+        global.loader.onComplete.add(() => {
+            global.loading = false;
+        });
+        global.loading = true;
         global.loader
             .load(() => {
                 this.app.stage.removeChild(loadingLayer);
                 this.showBook();
+                
             });
+    }
+    /**
+     * 加载更多图片
+     */
+    loadMore(){
+        if(global.loading) return;
+        let startIndex = Object.keys(global.loader.resources).length;
+        if(startIndex - this.currentIndex > config.preload) return;
+        
+        global.loading = true;
+        for(let i=startIndex;i<startIndex+config.preload;i++){
+            if(config.images[i]){
+                global.loader.add(`img${i}`,config.images[i]);
+            }
+        }
+        
+        global.loader.load();
     }
     showBook() {
         this.showRight(this.currentIndex);
@@ -129,7 +153,7 @@ class Book {
         this.app.stage.on("mousedown", (e) => {
             global.tween && global.tween.progress(1);
             this.moving = true;
-            console.log(this.currentIndex)
+            
 
             const {x,y} = e.data.global;
             global.currentCorner = 'rb';
@@ -146,17 +170,19 @@ class Book {
                 this.showLeft(this.currentIndex-3);
                 this.pageContain.init(this.currentIndex-1,this.currentIndex-2);
             }
-            this.pageContain.update(new PIXI.Point(x, y));
+            // this.pageContain.update(new PIXI.Point(x, y));
         });
         this.app.stage.on("mouseup", (e) => {
             this.moving = false;
-            //点击期间没有拖拽，则认为是单机
+            //点击期间没有拖拽，则认为是单击
             if(!this.dragMove){
                 if(global.currentCorner.includes("l")){
                     if(this.currentIndex <= 0 ) return;
+                    this.pageContain.update(new PIXI.Point(global.lb.x+100, global.lb.y-100));
                     this.turnRight();
                 }else{
                     if(this.currentIndex>= config.images.length-1) return;
+                    this.pageContain.update(new PIXI.Point(global.rb.x-100, global.rb.y-100));
                     this.turnLeft();
                 }
                 return;
@@ -209,6 +235,12 @@ class Book {
             //如果后面还有页面
             this.currentIndex += 2;
             this.pageContain.removeChildren();
+
+            
+            if(!global.loader.resources[`img${config.images.length-1}`]){
+                this.loadMore();
+            }
+
         });
     }
     /**
@@ -229,8 +261,9 @@ class Book {
     showRight(index){
         this.rightContain.removeChildren();
         if(index > config.images.length-1 || this.currentIndex >config.images.length-1) return;
+        
         const paper = new Paper({
-            texture: global.loader.resources[`img${[index || this.currentIndex]}`].texture,
+            index:index||this.currentIndex,
             height: config.paperHeight,
             width: config.paperWidth
         });
@@ -253,8 +286,9 @@ class Book {
     showLeft(index){
         this.leftContain.removeChildren();
         if(index<0) return;
+        
         const paper = new Paper({
-            texture: global.loader.resources[`img${[index || this.currentIndex]}`].texture,
+            index:index||this.currentIndex,
             height: config.paperHeight,
             width: config.paperWidth
         });
@@ -263,10 +297,9 @@ class Book {
             x: 0,
             y: 0
         });
-        this.leftContain.addChild(paper);
-
-        
+        this.leftContain.addChild(paper);   
     }
+    
 
 }
 

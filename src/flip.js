@@ -24,12 +24,12 @@ class Flip extends PIXI.Container{
 		
 		const corner = global.currentCorner;
 		const p1 = new Paper({
-			texture: global.loader.resources[`img${[currentIndex]}`].texture,
+			index: currentIndex,
 			height: config.paperHeight,
 			width: config.paperWidth
 		});
 		const p2 = new Paper({
-			texture: global.loader.resources[`img${[nextIndex]}`].texture,
+			index: nextIndex,
 			height: config.paperHeight,
 			width: config.paperWidth
 		});
