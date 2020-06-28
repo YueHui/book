@@ -4,12 +4,14 @@ import {dragShadowImg,global, config} from './index';
 
 class Paper extends PIXI.Container {
 	constructor({
-		texture,
+		index,
 		height,
 		width
 	}) {
 		super();
-		const image = new PIXI.Sprite(texture);
+		let resource = global.loader.resources[`img${index}`];
+		const image = resource && resource.texture?new PIXI.Sprite(resource.texture):this.getWhite("加载中,请稍候");
+
 		image.height = height;
 		image.width = width;
 		image.cursor = 'pointer';
@@ -129,7 +131,33 @@ class Paper extends PIXI.Container {
 		this.mask = mask;
 		this.maskA = mask;
 	}
+	/**
+     * 空白页
+     * @param text 要显示的文字
+     */
+    getWhite(text){
+        const paper = new PIXI.Container();
 
+        const bg = new PIXI.Graphics();
+		const height = config.paperHeight;
+		const width = config.paperWidth;
+
+		bg.beginFill(0xFFFFFF);
+		bg.drawRect(0, 0, width, height);
+        bg.endFill();
+        paper.addChild(bg);
+
+        if(text){
+            const t = new PIXI.Text(text, {
+                fill: '0x000',
+                align: 'center'
+            });
+            t.x = config.paperWidth / 2 - 100;
+            t.y = 200;
+            paper.addChild(t);
+        }
+        return paper;
+    }
 
 }
 
