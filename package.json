@@ -1,6 +1,6 @@
 {
   "name": "book",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "canvas 翻书动画",
   "main": "dist/book.js",
   "scripts": {
