@@ -14,7 +14,8 @@ let config = {
     padding: 100,
     paperWidth: 500,
     paperHeight: 600,
-    preload: 5
+    preload: 5,
+    isShowArrow:true
 },
 global = {
     middleTopPoint : new PIXI.Point(0,0),
@@ -144,7 +145,10 @@ class Book {
     }
     showBook() {
         this.showRight(this.currentIndex);
-        this.initArrows(); 
+        if(config.isShowArrow){
+            this.initArrows(); 
+        }
+        
 
         this.app.stage.interactive = true;
         this.app.stage.on("mousedown", (e) => {
