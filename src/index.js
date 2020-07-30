@@ -15,7 +15,8 @@ let config = {
     paperWidth: 500,
     paperHeight: 600,
     preload: 5,
-    isShowArrow:true
+    isShowArrow:true,
+    backgroundColor:0x666666
 },
 global = {
     middleTopPoint : new PIXI.Point(0,0),
@@ -65,7 +66,7 @@ class Book {
             width: config.width,
             height: config.height,
             sharedTicker: true,
-            backgroundColor: 0x666666,
+            backgroundColor: config.backgroundColor,
             antialias: true,
         });
         rootNode.appendChild(app.view);
