@@ -30,6 +30,10 @@ class Paper extends PIXI.Container {
 		this.dragShadow = PIXI.Sprite.from(dragShadowImg);
 		this.corner = 'rb';
 		this.hasDragMask = false;
+
+		this.on('removed',()=>{
+			this.destroy();
+		})
 	}
 	setPosition({
 		x,
@@ -78,7 +82,8 @@ class Paper extends PIXI.Container {
 		this.rotation = alpha;
 		this.showWidth = Math.abs(ml / Math.sin(alpha));
 
-		// console.log(this.corner)
+		
+		
 		if(global.currentCorner.includes('l')){
 			this.dragShadow.x = this.image.width - this.showWidth + this.dragShadow.width;
 			this.dragShadow.y = this.dragShadow.height-100

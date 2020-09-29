@@ -50,9 +50,13 @@ class Book {
         this.loadImages();
     }
     destroy(){
-        this.app && this.app.destroy(true);
+        this.app && this.app.destroy(true,{children:true,texture:true,baseTexture:true});
         //loader.reset();
+        this.app = null;
+        global.loader.reset();
         global.loader = null;
+        global.tween = null;
+        
     }
     init() {
         let rootNode = config.root;

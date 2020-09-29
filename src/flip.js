@@ -95,6 +95,17 @@ class Flip extends PIXI.Container{
 		
 		const showWidth = Math.abs(ml / Math.sin(alpha));
 		if(showWidth > config.paperWidth) return;
+
+		//检查另一边界限
+		const topPoint = paper.toGlobal(new PIXI.Point(0,0),new PIXI.Point(0,-config.paperHeight));
+		const topHeight = global.middleTopPoint.y - topPoint.y;
+		console.log(alpha);
+		if(topHeight/Math.sin(alpha)>config.paperWidth-20){
+			// console.log('out');
+			return;
+		}
+		// console.log(topHeight/Math.sin(alpha),'update');
+
 		paper.alpha = 1;
 		paper.x = point.x;
         paper.y = point.y;
