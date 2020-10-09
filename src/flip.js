@@ -1,8 +1,6 @@
 
 import * as PIXI from 'pixi.js';
-import {
-	gsap
-} from "gsap/all";
+import {gsap} from "gsap/all";
 import Paper from './paper';
 import {config,global} from './index';
 
@@ -97,14 +95,15 @@ class Flip extends PIXI.Container{
 		if(showWidth > config.paperWidth) return;
 
 		//检查另一边界限
-		const topPoint = paper.toGlobal(new PIXI.Point(0,0),new PIXI.Point(0,-config.paperHeight));
+		const topPoint = paper.toGlobal(new PIXI.Point(0, 0), new PIXI.Point(0, -config.paperHeight));
 		const topHeight = global.middleTopPoint.y - topPoint.y;
-		console.log(alpha);
-		if(topHeight/Math.sin(alpha)>config.paperWidth-20){
+		const distance = topHeight / Math.sin(alpha);
+		// console.log(distance, config.paperWidth);
+		if (distance > config.paperWidth) {
 			// console.log('out');
 			return;
 		}
-		// console.log(topHeight/Math.sin(alpha),'update');
+		// console.log('update');
 
 		paper.alpha = 1;
 		paper.x = point.x;
@@ -122,20 +121,38 @@ class Flip extends PIXI.Container{
 	recover(onComplete){
 		const paper = this.movePaper;
 		const corner = global[global.currentCorner];
+		if(paper.y>global.middleTopPoint.y+config.paperHeight){
+			global.tween = gsap.to(paper, {
+				keyframes:[
+					{x: corner.x-10*(paper.x>global.middleTopPoint.x?1:-1),y:corner.y-10,duration:ANIMATE_TIME*0.9},
+					{x:corner.x,y:corner.y,duration:ANIMATE_TIME*0.1}
+				],
+				onUpdate: ()=>{
+					paper.updatePosition(corner);
+					this.addMask();
+				},
+				onComplete:()=>{
+					this.removeChildren();
+					this.mask = null;
+					onComplete && onComplete();
+				}
+			})
+		}else{
+			global.tween = gsap.to(paper, ANIMATE_TIME, {
+				x: corner.x,
+				y: corner.y,
+				onUpdate: ()=>{
+					paper.updatePosition(corner);
+					this.addMask();
+				},
+				onComplete:()=>{
+					this.removeChildren();
+					this.mask = null;
+					onComplete && onComplete();
+				}
+			});
+		}
 		
-		global.tween = gsap.to(paper, ANIMATE_TIME, {
-			x: corner.x,
-			y: corner.y,
-			onUpdate: ()=>{
-				paper.updatePosition(corner);
-				this.addMask();
-			},
-			onComplete:()=>{
-				this.removeChildren();
-				this.mask = null;
-				onComplete && onComplete();
-			}
-		});
 		
 	}
 	/**
