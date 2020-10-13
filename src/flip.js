@@ -1,5 +1,5 @@
 
-import * as PIXI from 'pixi.js';
+import * as PIXI from 'pixi.js-legacy';
 import {gsap} from "gsap/all";
 import Paper from './paper';
 import {config,global} from './index';
@@ -75,7 +75,9 @@ class Flip extends PIXI.Container{
 	update(point){
 		
 		const paper = this.movePaper;
+		
 		let corner = global[global.currentCorner];
+		
 
 		//鼠标距底边距离
 		const ml = corner.y - point.y;
@@ -94,20 +96,27 @@ class Flip extends PIXI.Container{
 		const showWidth = Math.abs(ml / Math.sin(alpha));
 		if(showWidth > config.paperWidth) return;
 
+		paper.oldrotation = paper.rotation;
+		paper.rotation = alpha;
+
 		//检查另一边界限
 		const topPoint = paper.toGlobal(new PIXI.Point(0, 0), new PIXI.Point(0, -config.paperHeight));
 		const topHeight = global.middleTopPoint.y - topPoint.y;
 		const distance = topHeight / Math.sin(alpha);
 		// console.log(distance, config.paperWidth);
-		if (distance > config.paperWidth) {
-			// console.log('out');
+		if (global.currentCorner.includes("r") && distance > config.paperWidth) {
+			paper.rotation = paper.oldrotation;
+			return;
+		}
+		if (global.currentCorner.includes("l") && distance < 0) {
+			paper.rotation = paper.oldrotation;
 			return;
 		}
 		// console.log('update');
 
 		paper.alpha = 1;
 		paper.x = point.x;
-        paper.y = point.y;
+		paper.y = point.y;
 		paper.updatePosition(corner,alpha);
 		this.addMask();
 	}
@@ -121,7 +130,7 @@ class Flip extends PIXI.Container{
 	recover(onComplete){
 		const paper = this.movePaper;
 		const corner = global[global.currentCorner];
-		if(paper.y>global.middleTopPoint.y+config.paperHeight){
+		if(paper.y>=global.middleTopPoint.y+config.paperHeight){
 			global.tween = gsap.to(paper, {
 				keyframes:[
 					{x: corner.x-10*(paper.x>global.middleTopPoint.x?1:-1),y:corner.y-10,duration:ANIMATE_TIME*0.9},

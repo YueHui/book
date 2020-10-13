@@ -1,5 +1,5 @@
 
-import * as PIXI from 'pixi.js';
+import * as PIXI from 'pixi.js-legacy';
 import {dragShadowImg,global, config} from './index';
 
 class Paper extends PIXI.Container {
@@ -92,8 +92,6 @@ class Paper extends PIXI.Container {
 		}
 		
 		this.dragShadow.rotation = -this.rotation/2 ;
-		
-		
 	}
 	/**
 	 * 添加阴影

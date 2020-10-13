@@ -1,5 +1,5 @@
 
-import * as PIXI from 'pixi.js';
+import * as PIXI from 'pixi.js-legacy';
 import Paper from './paper';
 import Flip from './flip';
 import Arrow from './arrow';
@@ -67,12 +67,15 @@ class Book {
             throw new Error("need to given a node or id");
         }
         const app = new PIXI.Application({
+            autoStart:false,
             width: config.width,
             height: config.height,
             sharedTicker: true,
             backgroundColor: config.backgroundColor,
             antialias: true,
+            forceCanvas: !PIXI.utils.isWebGLSupported()
         });
+        
         rootNode.appendChild(app.view);
         global.loader = new PIXI.Loader();
 
