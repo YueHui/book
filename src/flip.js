@@ -76,6 +76,7 @@ class Flip extends PIXI.Container{
 		
 		const paper = this.movePaper;
 		
+		
 		let corner = global[global.currentCorner];
 		
 
@@ -95,7 +96,7 @@ class Flip extends PIXI.Container{
 		
 		const showWidth = Math.abs(ml / Math.sin(alpha));
 		if(showWidth > config.paperWidth) return;
-
+		if(!paper.transform) return;
 		paper.oldrotation = paper.rotation;
 		paper.rotation = alpha;
 
